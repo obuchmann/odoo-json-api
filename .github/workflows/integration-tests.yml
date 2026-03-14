@@ -1,0 +1,81 @@
+name: Integration Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start PostgreSQL
+        run: docker compose -f docker/docker-compose.yml up db -d --wait
+
+      - name: Initialize Odoo database
+        run: |
+          docker compose -f docker/docker-compose.yml run --rm odoo \
+            odoo -c /etc/odoo/odoo.conf \
+            -d odoo \
+            -i base \
+            --stop-after-init \
+            --without-demo=all \
+            --log-level=warn
+
+      - name: Start Odoo server
+        run: docker compose -f docker/docker-compose.yml up odoo -d
+
+      - name: Wait for Odoo to be ready
+        run: |
+          echo "Waiting for Odoo..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8069/web/health > /dev/null 2>&1; then
+              echo "Odoo ready after $((i * 5))s"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Odoo did not become ready in time"
+              docker compose -f docker/docker-compose.yml logs odoo
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Generate Odoo API key
+        id: odoo-key
+        run: |
+          RAW=$(printf '%s\n' \
+            'admin = env["res.users"].search([("login","=","admin")], limit=1)' \
+            'env_a = env(user=admin)' \
+            'key = env_a["res.users.apikeys"]._generate("rpc", "CI")' \
+            'env_a.cr.commit()' \
+            'print("CI_API_KEY=" + key)' \
+            | docker compose -f docker/docker-compose.yml exec -T odoo \
+              odoo shell -d odoo --no-http -c /etc/odoo/odoo.conf --log-level=error 2>/dev/null)
+          KEY=$(echo "$RAW" | grep 'CI_API_KEY=' | sed 's/CI_API_KEY=//' | tr -d ' \r\n')
+          if [ -z "$KEY" ]; then
+            echo "Failed to generate API key"
+            echo "Shell output: $RAW"
+            exit 1
+          fi
+          echo "::add-mask::$KEY"
+          echo "key=$KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: Run integration tests
+        env:
+          ODOO_HOST: http://localhost:8069
+          ODOO_API_KEY: ${{ steps.odoo-key.outputs.key }}
+          ODOO_DATABASE: odoo
+        run: composer test:integration
