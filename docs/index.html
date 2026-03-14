@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Odoo JSON API - PHP Client for Odoo 19+</title>
+    <style>
+        :root {
+            --primary: #714B67;
+            --primary-dark: #5a3c53;
+            --primary-light: #8e6383;
+            --accent: #00A09D;
+            --accent-dark: #008785;
+            --bg: #ffffff;
+            --bg-alt: #f8f6f7;
+            --bg-code: #2d2d2d;
+            --text: #1a1a2e;
+            --text-light: #555;
+            --text-muted: #888;
+            --border: #e0dce0;
+            --shadow: 0 2px 12px rgba(113, 75, 103, 0.08);
+            --radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text);
+            line-height: 1.7;
+            background: var(--bg);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .header h1 span {
+            color: var(--accent);
+        }
+
+        .header nav a {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .header nav a:hover {
+            color: white;
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .github-link svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, #3d2438 100%);
+            color: white;
+            padding: 5rem 2rem;
+            text-align: center;
+        }
+
+        .hero h2 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.03em;
+        }
+
+        .hero h2 span {
+            color: var(--accent);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .hero-badges {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(4px);
+        }
+
+        .hero-install {
+            background: var(--bg-code);
+            color: #e0e0e0;
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            border-radius: var(--radius);
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.95rem;
+        }
+
+        .hero-install .prompt {
+            color: var(--accent);
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 3rem;
+            padding: 3rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: sticky;
+            top: 80px;
+            align-self: start;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin: 1.5rem 0 0.5rem;
+            font-weight: 700;
+        }
+
+        .sidebar h3:first-child {
+            margin-top: 0;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 0.3rem 0.75rem;
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            transition: all 0.15s;
+            border-left: 2px solid transparent;
+        }
+
+        .sidebar a:hover {
+            color: var(--primary);
+            background: var(--bg-alt);
+            border-left-color: var(--primary);
+        }
+
+        /* Content */
+        .content section {
+            margin-bottom: 4rem;
+        }
+
+        .content h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            letter-spacing: -0.02em;
+        }
+
+        .content h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 2rem 0 0.75rem;
+            color: var(--text);
+        }
+
+        .content h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.5rem;
+            color: var(--text-light);
+        }
+
+        .content p {
+            margin-bottom: 1rem;
+            color: var(--text-light);
+        }
+
+        .content ul, .content ol {
+            margin: 0.5rem 0 1rem 1.5rem;
+            color: var(--text-light);
+        }
+
+        .content li {
+            margin-bottom: 0.3rem;
+        }
+
+        /* Code blocks */
+        pre {
+            background: var(--bg-code);
+            color: #e0e0e0;
+            padding: 1.25rem 1.5rem;
+            border-radius: var(--radius);
+            overflow-x: auto;
+            margin: 1rem 0 1.5rem;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            box-shadow: var(--shadow);
+        }
+
+        code {
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        }
+
+        p code, li code, td code {
+            background: var(--bg-alt);
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--primary);
+            border: 1px solid var(--border);
+        }
+
+        /* Syntax highlighting */
+        .kw { color: #c792ea; }
+        .cl { color: #82aaff; }
+        .fn { color: #82aaff; }
+        .str { color: #c3e88d; }
+        .var { color: #f07178; }
+        .cm { color: #676e95; font-style: italic; }
+        .num { color: #f78c6c; }
+        .op { color: #89ddff; }
+        .par { color: #e0e0e0; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-alt);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid var(--border);
+            color: var(--text);
+        }
+
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-light);
+        }
+
+        tr:hover td {
+            background: var(--bg-alt);
+        }
+
+        /* Info boxes */
+        .info-box {
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius);
+            margin: 1rem 0 1.5rem;
+            border-left: 4px solid;
+        }
+
+        .info-box.tip {
+            background: #f0faf9;
+            border-color: var(--accent);
+        }
+
+        .info-box.warning {
+            background: #fff8f0;
+            border-color: #e67e22;
+        }
+
+        .info-box.info {
+            background: #f0f4ff;
+            border-color: #3498db;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Features grid */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .feature-card h4 {
+            margin: 0 0 0.5rem;
+            color: var(--primary);
+            font-size: 1rem;
+        }
+
+        .feature-card p {
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* Class reference cards */
+        .class-card {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin: 1rem 0 1.5rem;
+        }
+
+        .class-card h4 {
+            margin: 0 0 0.25rem;
+            color: var(--primary);
+        }
+
+        .class-card .namespace {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--bg-alt);
+            border-top: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                padding-bottom: 1.5rem;
+                border-bottom: 1px solid var(--border);
+                max-height: none;
+            }
+
+            .sidebar h3 {
+                width: 100%;
+                margin: 0.5rem 0 0;
+            }
+
+            .sidebar a {
+                border-left: none;
+                border: 1px solid var(--border);
+                border-radius: 20px;
+                padding: 0.25rem 0.75rem;
+                font-size: 0.8rem;
+            }
+
+            .hero h2 {
+                font-size: 2rem;
+            }
+
+            .header nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <div class="header-inner">
+        <h1>Odoo <span>JSON API</span></h1>
+        <nav>
+            <a href="#getting-started">Getting Started</a>
+            <a href="#usage">Usage</a>
+            <a href="#api-reference">API Reference</a>
+            <a href="https://github.com/obuchmann/odoo-json-api" class="github-link">
+                <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                GitHub
+            </a>
+        </nav>
+    </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+    <h2>Odoo <span>JSON API</span></h2>
+    <p>A modern, type-safe PHP client for Odoo's JSON-2 external API (Odoo 19+). Built with PSR standards.</p>
+    <div class="hero-badges">
+        <span class="badge">PHP 8.3+</span>
+        <span class="badge">Odoo 19+</span>
+        <span class="badge">PSR-18 / PSR-17</span>
+        <span class="badge">Type-safe</span>
+        <span class="badge">MIT License</span>
+    </div>
+    <div class="hero-install">
+        <span class="prompt">$</span> composer require obuchmann/odoo-json-api
+    </div>
+</section>
+
+<!-- Main -->
+<div class="main-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <h3>Getting Started</h3>
+        <a href="#getting-started">Overview</a>
+        <a href="#installation">Installation</a>
+        <a href="#quick-start">Quick Start</a>
+
+        <h3>Usage</h3>
+        <a href="#configuration">Configuration</a>
+        <a href="#direct-methods">Direct Methods</a>
+        <a href="#request-builder">Request Builder</a>
+        <a href="#domain-filters">Domain Filters</a>
+        <a href="#context">Context</a>
+        <a href="#custom-http">Custom HTTP Client</a>
+        <a href="#error-handling">Error Handling</a>
+
+        <h3>API Reference</h3>
+        <a href="#class-odoo">Odoo</a>
+        <a href="#class-config">Config</a>
+        <a href="#class-domain">Domain</a>
+        <a href="#class-context">Context</a>
+        <a href="#class-request-builder">RequestBuilder</a>
+        <a href="#class-response">Response</a>
+        <a href="#class-http-client">HttpClient</a>
+        <a href="#exceptions">Exceptions</a>
+        <a href="#request-classes">Request Classes</a>
+        <a href="#traits">Traits</a>
+
+        <h3>More</h3>
+        <a href="#architecture">Architecture</a>
+        <a href="#testing">Testing</a>
+    </aside>
+
+    <!-- Content -->
+    <main class="content">
+
+        <!-- Getting Started -->
+        <section id="getting-started">
+            <h2>Getting Started</h2>
+            <p>
+                <strong>Odoo JSON API</strong> is a PHP library that provides a clean, type-safe wrapper around
+                Odoo's new <strong>JSON-2 external API</strong>, introduced in Odoo 19. This new API replaces
+                the legacy XML-RPC and JSON-RPC interfaces with a modern HTTP+JSON approach using API key authentication.
+            </p>
+
+            <div class="features">
+                <div class="feature-card">
+                    <h4>Type-Safe</h4>
+                    <p>Full PHP 8.3+ type declarations with strict types throughout. Leverages readonly classes, named arguments, and union types.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>PSR Compliant</h4>
+                    <p>Built on PSR-18 (HTTP Client) and PSR-17 (HTTP Factories). Bring your own HTTP client or use auto-discovery.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Fluent Builder</h4>
+                    <p>Chainable request builder with <code>where()</code>, <code>fields()</code>, <code>limit()</code>, <code>orderBy()</code> and more.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Full CRUD</h4>
+                    <p>Complete support for search, read, create, write, unlink, count, fields_get, read_group, and custom method execution.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Error Handling</h4>
+                    <p>Typed exception hierarchy mapping HTTP status codes to specific exception classes for precise error handling.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Zero Config</h4>
+                    <p>Auto-discovers Guzzle or Nyholm PSR implementations. Just install a PSR-18 client and go.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Installation -->
+        <section id="installation">
+            <h2>Installation</h2>
+            <h3>Requirements</h3>
+            <ul>
+                <li><strong>PHP 8.3</strong> or higher</li>
+                <li>A <strong>PSR-18</strong> HTTP client (e.g., Guzzle 7.5+)</li>
+                <li><strong>Odoo 19+</strong> instance with JSON-2 API enabled</li>
+            </ul>
+
+            <h3>Install via Composer</h3>
+<pre><span class="prompt">$</span> composer require obuchmann/odoo-json-api</pre>
+
+            <p>If you don't already have a PSR-18 HTTP client installed:</p>
+<pre><span class="prompt">$</span> composer require guzzlehttp/guzzle</pre>
+
+            <div class="info-box tip">
+                <strong>Tip</strong>
+                The library auto-discovers Guzzle and Nyholm PSR-7 implementations. If you use a different PSR-18 client, pass it explicitly to the <code>Odoo</code> constructor.
+            </div>
+        </section>
+
+        <!-- Quick Start -->
+        <section id="quick-start">
+            <h2>Quick Start</h2>
+<pre><span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Config</span>;
+<span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Odoo</span>;
+
+<span class="cm">// Configure connection</span>
+<span class="var">$config</span> = <span class="kw">new</span> <span class="cl">Config</span>(
+    <span class="fn">url:</span> <span class="str">'https://your-odoo-instance.com'</span>,
+    <span class="fn">apiKey:</span> <span class="str">'your-api-key'</span>,
+    <span class="fn">database:</span> <span class="str">'your-database'</span>, <span class="cm">// optional if dbfilter is configured</span>
+);
+
+<span class="cm">// Create client</span>
+<span class="var">$odoo</span> = <span class="kw">new</span> <span class="cl">Odoo</span>(<span class="var">$config</span>);
+
+<span class="cm">// Search and read partners</span>
+<span class="var">$partners</span> = <span class="var">$odoo</span>-><span class="fn">searchRead</span>(<span class="str">'res.partner'</span>, <span class="fn">fields:</span> [<span class="str">'name'</span>, <span class="str">'email'</span>], <span class="fn">limit:</span> <span class="num">10</span>);
+
+<span class="cm">// Or use the fluent builder</span>
+<span class="var">$partners</span> = <span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)
+    -><span class="fn">where</span>(<span class="str">'is_company'</span>, <span class="str">'='</span>, <span class="kw">true</span>)
+    -><span class="fn">fields</span>([<span class="str">'name'</span>, <span class="str">'email'</span>, <span class="str">'phone'</span>])
+    -><span class="fn">orderBy</span>(<span class="str">'name asc'</span>)
+    -><span class="fn">limit</span>(<span class="num">20</span>)
+    -><span class="fn">get</span>();</pre>
+        </section>
+
+        <!-- Configuration -->
+        <section id="configuration">
+            <h2>Configuration</h2>
+            <p>The <code>Config</code> class holds your Odoo connection details. It is a readonly value object.</p>
+
+<pre><span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Config</span>;
+
+<span class="var">$config</span> = <span class="kw">new</span> <span class="cl">Config</span>(
+    <span class="fn">url:</span> <span class="str">'https://your-odoo-instance.com'</span>,   <span class="cm">// Base URL (trailing slash stripped)</span>
+    <span class="fn">apiKey:</span> <span class="str">'your-api-key'</span>,                  <span class="cm">// Bearer token for authentication</span>
+    <span class="fn">database:</span> <span class="str">'mydb'</span>,                        <span class="cm">// Optional: sent as X-Odoo-Database header</span>
+);</pre>
+
+            <table>
+                <thead>
+                    <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>url</code></td><td><code>string</code></td><td>Yes</td><td>Base URL of your Odoo instance</td></tr>
+                    <tr><td><code>apiKey</code></td><td><code>string</code></td><td>Yes</td><td>API key for Bearer authentication</td></tr>
+                    <tr><td><code>database</code></td><td><code>?string</code></td><td>No</td><td>Database name (sent as <code>X-Odoo-Database</code> header)</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Direct Methods -->
+        <section id="direct-methods">
+            <h2>Direct Methods</h2>
+            <p>The <code>Odoo</code> class provides direct methods for all standard operations:</p>
+
+            <h3>Search &amp; Read</h3>
+<pre><span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Domain</span>;
+
+<span class="cm">// Search and read with optional domain filter</span>
+<span class="var">$domain</span> = <span class="kw">new</span> <span class="cl">Domain</span>();
+<span class="var">$domain</span>-><span class="fn">where</span>(<span class="str">'is_company'</span>, <span class="str">'='</span>, <span class="kw">true</span>)
+       -><span class="fn">where</span>(<span class="str">'country_id'</span>, <span class="str">'='</span>, <span class="num">14</span>);
+
+<span class="var">$companies</span> = <span class="var">$odoo</span>-><span class="fn">searchRead</span>(<span class="str">'res.partner'</span>, <span class="var">$domain</span>, <span class="fn">fields:</span> [<span class="str">'name'</span>]);
+
+<span class="cm">// Search for IDs only</span>
+<span class="var">$ids</span> = <span class="var">$odoo</span>-><span class="fn">search</span>(<span class="str">'res.partner'</span>, <span class="var">$domain</span>);
+
+<span class="cm">// Read specific records by IDs</span>
+<span class="var">$records</span> = <span class="var">$odoo</span>-><span class="fn">read</span>(<span class="str">'res.partner'</span>, [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>], <span class="fn">fields:</span> [<span class="str">'name'</span>, <span class="str">'email'</span>]);
+
+<span class="cm">// Count records</span>
+<span class="var">$count</span> = <span class="var">$odoo</span>-><span class="fn">count</span>(<span class="str">'res.partner'</span>, <span class="var">$domain</span>);</pre>
+
+            <h3>Create, Update, Delete</h3>
+<pre><span class="cm">// Create</span>
+<span class="var">$id</span> = <span class="var">$odoo</span>-><span class="fn">create</span>(<span class="str">'res.partner'</span>, [
+    <span class="str">'name'</span> => <span class="str">'New Partner'</span>,
+    <span class="str">'email'</span> => <span class="str">'partner@example.com'</span>,
+]);
+
+<span class="cm">// Update</span>
+<span class="var">$odoo</span>-><span class="fn">write</span>(<span class="str">'res.partner'</span>, [<span class="var">$id</span>], [<span class="str">'name'</span> => <span class="str">'Updated Name'</span>]);
+
+<span class="cm">// Delete</span>
+<span class="var">$odoo</span>-><span class="fn">unlink</span>(<span class="str">'res.partner'</span>, [<span class="var">$id</span>]);</pre>
+
+            <h3>Other Operations</h3>
+<pre><span class="cm">// Get field definitions</span>
+<span class="var">$fields</span> = <span class="var">$odoo</span>-><span class="fn">fieldsGet</span>(<span class="str">'res.partner'</span>, [<span class="str">'string'</span>, <span class="str">'type'</span>]);
+
+<span class="cm">// Call any method on a model</span>
+<span class="var">$result</span> = <span class="var">$odoo</span>-><span class="fn">execute</span>(<span class="str">'res.partner'</span>, <span class="str">'custom_method'</span>, [<span class="str">'param'</span> => <span class="str">'value'</span>]);</pre>
+        </section>
+
+        <!-- Request Builder -->
+        <section id="request-builder">
+            <h2>Fluent Request Builder</h2>
+            <p>Use <code>$odoo->model('model.name')</code> to get a fluent builder scoped to a specific Odoo model.</p>
+
+<pre><span class="cm">// Search and read with fluent API</span>
+<span class="var">$partners</span> = <span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)
+    -><span class="fn">where</span>(<span class="str">'is_company'</span>, <span class="str">'='</span>, <span class="kw">true</span>)
+    -><span class="fn">fields</span>([<span class="str">'name'</span>, <span class="str">'email'</span>, <span class="str">'phone'</span>])
+    -><span class="fn">orderBy</span>(<span class="str">'name asc'</span>)
+    -><span class="fn">limit</span>(<span class="num">20</span>)
+    -><span class="fn">offset</span>(<span class="num">0</span>)
+    -><span class="fn">get</span>();
+
+<span class="cm">// Get first matching record</span>
+<span class="var">$partner</span> = <span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)
+    -><span class="fn">where</span>(<span class="str">'email'</span>, <span class="str">'='</span>, <span class="str">'user@example.com'</span>)
+    -><span class="fn">fields</span>([<span class="str">'name'</span>, <span class="str">'email'</span>])
+    -><span class="fn">first</span>();
+
+<span class="cm">// Find by ID</span>
+<span class="var">$partner</span> = <span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)
+    -><span class="fn">fields</span>([<span class="str">'name'</span>, <span class="str">'email'</span>])
+    -><span class="fn">find</span>(<span class="num">42</span>);
+
+<span class="cm">// Count</span>
+<span class="var">$count</span> = <span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)
+    -><span class="fn">where</span>(<span class="str">'active'</span>, <span class="str">'='</span>, <span class="kw">true</span>)
+    -><span class="fn">count</span>();
+
+<span class="cm">// CRUD via builder</span>
+<span class="var">$id</span> = <span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)-><span class="fn">create</span>([<span class="str">'name'</span> => <span class="str">'New'</span>]);
+<span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)-><span class="fn">update</span>([<span class="num">1</span>, <span class="num">2</span>], [<span class="str">'active'</span> => <span class="kw">false</span>]);
+<span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)-><span class="fn">delete</span>([<span class="num">1</span>, <span class="num">2</span>]);
+
+<span class="cm">// Read grouped data</span>
+<span class="var">$groups</span> = <span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)
+    -><span class="fn">where</span>(<span class="str">'active'</span>, <span class="str">'='</span>, <span class="kw">true</span>)
+    -><span class="fn">fields</span>([<span class="str">'country_id'</span>])
+    -><span class="fn">readGroup</span>([<span class="str">'country_id'</span>]);
+
+<span class="cm">// Call custom method</span>
+<span class="var">$result</span> = <span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)-><span class="fn">call</span>(<span class="str">'my_method'</span>, [<span class="str">'arg'</span> => <span class="str">'value'</span>]);</pre>
+
+            <h3>Builder Methods</h3>
+            <table>
+                <thead>
+                    <tr><th>Method</th><th>Description</th><th>Returns</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>where($field, $op, $value)</code></td><td>Add AND condition to domain</td><td><code>static</code></td></tr>
+                    <tr><td><code>orWhere($field, $op, $value)</code></td><td>Add OR condition to domain</td><td><code>static</code></td></tr>
+                    <tr><td><code>fields(array $fields)</code></td><td>Set fields to retrieve</td><td><code>static</code></td></tr>
+                    <tr><td><code>limit(int $limit)</code></td><td>Set result limit</td><td><code>static</code></td></tr>
+                    <tr><td><code>offset(int $offset)</code></td><td>Set result offset</td><td><code>static</code></td></tr>
+                    <tr><td><code>orderBy(string $order)</code></td><td>Set sort order</td><td><code>static</code></td></tr>
+                    <tr><td><code>context(Context $ctx)</code></td><td>Set execution context</td><td><code>static</code></td></tr>
+                    <tr><td><code>get()</code></td><td>Execute search_read</td><td><code>array</code></td></tr>
+                    <tr><td><code>search()</code></td><td>Get matching IDs</td><td><code>array</code></td></tr>
+                    <tr><td><code>first()</code></td><td>Get first match or null</td><td><code>?array</code></td></tr>
+                    <tr><td><code>find(int $id)</code></td><td>Read by ID</td><td><code>?array</code></td></tr>
+                    <tr><td><code>read(array $ids)</code></td><td>Read multiple by IDs</td><td><code>array</code></td></tr>
+                    <tr><td><code>count()</code></td><td>Count matches</td><td><code>int</code></td></tr>
+                    <tr><td><code>create(array $values)</code></td><td>Create record</td><td><code>int</code></td></tr>
+                    <tr><td><code>update(array $ids, array $values)</code></td><td>Update records</td><td><code>bool</code></td></tr>
+                    <tr><td><code>delete(array $ids)</code></td><td>Delete records</td><td><code>bool</code></td></tr>
+                    <tr><td><code>fieldsGet(?array $attrs)</code></td><td>Get field definitions</td><td><code>array</code></td></tr>
+                    <tr><td><code>readGroup(array $groupBy)</code></td><td>Read grouped data</td><td><code>array</code></td></tr>
+                    <tr><td><code>call(string $method, array $params)</code></td><td>Call any model method</td><td><code>mixed</code></td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Domain Filters -->
+        <section id="domain-filters">
+            <h2>Domain Filters</h2>
+            <p>The <code>Domain</code> class builds Odoo domain filter expressions using a fluent interface.</p>
+
+<pre><span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Domain</span>;
+
+<span class="var">$domain</span> = <span class="kw">new</span> <span class="cl">Domain</span>();
+<span class="var">$domain</span>-><span class="fn">where</span>(<span class="str">'name'</span>, <span class="str">'ilike'</span>, <span class="str">'test'</span>)
+       -><span class="fn">where</span>(<span class="str">'active'</span>, <span class="str">'='</span>, <span class="kw">true</span>)
+       -><span class="fn">orWhere</span>(<span class="str">'email'</span>, <span class="str">'!='</span>, <span class="kw">false</span>);
+
+<span class="cm">// You can also pass raw conditions to the constructor</span>
+<span class="var">$domain</span> = <span class="kw">new</span> <span class="cl">Domain</span>([[<span class="str">'active'</span>, <span class="str">'='</span>, <span class="kw">true</span>]]);</pre>
+
+            <h3>Common Operators</h3>
+            <table>
+                <thead>
+                    <tr><th>Operator</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>=</code></td><td>Equal</td></tr>
+                    <tr><td><code>!=</code></td><td>Not equal</td></tr>
+                    <tr><td><code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code></td><td>Comparison</td></tr>
+                    <tr><td><code>like</code> / <code>ilike</code></td><td>Pattern match (case sensitive / insensitive)</td></tr>
+                    <tr><td><code>not like</code> / <code>not ilike</code></td><td>Negated pattern match</td></tr>
+                    <tr><td><code>in</code> / <code>not in</code></td><td>List membership</td></tr>
+                    <tr><td><code>=like</code> / <code>=ilike</code></td><td>SQL-style pattern with <code>%</code> and <code>_</code></td></tr>
+                    <tr><td><code>child_of</code> / <code>parent_of</code></td><td>Hierarchy operators</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Context -->
+        <section id="context">
+            <h2>Context</h2>
+            <p>The <code>Context</code> class allows you to pass Odoo context parameters (language, timezone, custom keys) with your requests.</p>
+
+<pre><span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Context</span>;
+
+<span class="cm">// Create with initial values</span>
+<span class="var">$context</span> = <span class="kw">new</span> <span class="cl">Context</span>([<span class="str">'lang'</span> => <span class="str">'fr_FR'</span>, <span class="str">'tz'</span> => <span class="str">'Europe/Paris'</span>]);
+
+<span class="cm">// Or build it fluently</span>
+<span class="var">$context</span> = (<span class="kw">new</span> <span class="cl">Context</span>())
+    -><span class="fn">set</span>(<span class="str">'lang'</span>, <span class="str">'de_DE'</span>)
+    -><span class="fn">set</span>(<span class="str">'tz'</span>, <span class="str">'Europe/Vienna'</span>);
+
+<span class="cm">// Merge additional values</span>
+<span class="var">$context</span>-><span class="fn">merge</span>([<span class="str">'active_test'</span> => <span class="kw">false</span>]);
+
+<span class="cm">// Use with direct methods</span>
+<span class="var">$partners</span> = <span class="var">$odoo</span>-><span class="fn">searchRead</span>(<span class="str">'res.partner'</span>, <span class="fn">context:</span> <span class="var">$context</span>);
+
+<span class="cm">// Or with the builder</span>
+<span class="var">$partners</span> = <span class="var">$odoo</span>-><span class="fn">model</span>(<span class="str">'res.partner'</span>)
+    -><span class="fn">context</span>(<span class="var">$context</span>)
+    -><span class="fn">get</span>();</pre>
+        </section>
+
+        <!-- Custom HTTP Client -->
+        <section id="custom-http">
+            <h2>Custom HTTP Client</h2>
+            <p>By default the library auto-discovers Guzzle or Nyholm. You can provide your own PSR-18 client:</p>
+
+<pre><span class="kw">use</span> <span class="cl">GuzzleHttp\Client</span> <span class="kw">as</span> <span class="cl">GuzzleClient</span>;
+<span class="kw">use</span> <span class="cl">GuzzleHttp\Psr7\HttpFactory</span>;
+
+<span class="var">$httpClient</span> = <span class="kw">new</span> <span class="cl">GuzzleClient</span>([<span class="str">'timeout'</span> => <span class="num">30</span>]);
+<span class="var">$factory</span> = <span class="kw">new</span> <span class="cl">HttpFactory</span>();
+
+<span class="var">$odoo</span> = <span class="kw">new</span> <span class="cl">Odoo</span>(<span class="var">$config</span>, <span class="var">$httpClient</span>, <span class="var">$factory</span>, <span class="var">$factory</span>);</pre>
+
+            <div class="info-box info">
+                <strong>PSR Standards</strong>
+                The constructor accepts any <code>ClientInterface</code> (PSR-18), <code>RequestFactoryInterface</code>, and <code>StreamFactoryInterface</code> (PSR-17). When all three are provided, they are used directly. Otherwise, <code>HttpClientFactory::create()</code> fills in missing components via auto-discovery.
+            </div>
+        </section>
+
+        <!-- Error Handling -->
+        <section id="error-handling">
+            <h2>Error Handling</h2>
+            <p>The library provides a typed exception hierarchy that maps HTTP status codes to specific exception classes:</p>
+
+<pre><span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Exception\OdooException</span>;
+<span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Exception\AuthenticationException</span>;
+<span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Exception\NotFoundException</span>;
+<span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Exception\ValidationException</span>;
+<span class="kw">use</span> <span class="cl">Obuchmann\OdooJsonApi\Exception\ServerException</span>;
+
+<span class="kw">try</span> {
+    <span class="var">$partner</span> = <span class="var">$odoo</span>-><span class="fn">read</span>(<span class="str">'res.partner'</span>, [<span class="num">99999</span>]);
+} <span class="kw">catch</span> (<span class="cl">AuthenticationException</span> <span class="var">$e</span>) {
+    <span class="cm">// 401 or 403 - Invalid API key or insufficient permissions</span>
+} <span class="kw">catch</span> (<span class="cl">NotFoundException</span> <span class="var">$e</span>) {
+    <span class="cm">// 404 - Model or endpoint not found</span>
+} <span class="kw">catch</span> (<span class="cl">ValidationException</span> <span class="var">$e</span>) {
+    <span class="cm">// 400 - Invalid parameters</span>
+} <span class="kw">catch</span> (<span class="cl">ServerException</span> <span class="var">$e</span>) {
+    <span class="cm">// 500+ - Server error</span>
+} <span class="kw">catch</span> (<span class="cl">OdooException</span> <span class="var">$e</span>) {
+    <span class="cm">// Any other Odoo API error</span>
+    <span class="var">$e</span>-><span class="fn">getHttpStatusCode</span>();  <span class="cm">// HTTP status code</span>
+    <span class="var">$e</span>-><span class="fn">getErrorData</span>();       <span class="cm">// Raw error data from Odoo</span>
+}</pre>
+
+            <table>
+                <thead>
+                    <tr><th>Exception</th><th>HTTP Status</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>AuthenticationException</code></td><td>401, 403</td><td>Invalid API key or insufficient permissions</td></tr>
+                    <tr><td><code>NotFoundException</code></td><td>404</td><td>Model or resource not found</td></tr>
+                    <tr><td><code>ValidationException</code></td><td>400</td><td>Invalid request parameters</td></tr>
+                    <tr><td><code>ServerException</code></td><td>500+</td><td>Odoo server error</td></tr>
+                    <tr><td><code>OdooException</code></td><td>Any</td><td>Base class for all exceptions</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- API Reference -->
+        <section id="api-reference">
+            <h2>API Reference</h2>
+        </section>
+
+        <!-- Class: Odoo -->
+        <section id="class-odoo">
+            <h3>Odoo</h3>
+            <div class="class-card">
+                <h4>Odoo</h4>
+                <div class="namespace">Obuchmann\OdooJsonApi\Odoo</div>
+                <p>Main entry point. Wraps an <code>HttpClient</code> and provides direct methods as well as the fluent request builder.</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th>Method</th><th>Parameters</th><th>Returns</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>__construct</code></td><td><code>Config, ?ClientInterface, ?RequestFactoryInterface, ?StreamFactoryInterface</code></td><td>-</td></tr>
+                    <tr><td><code>model</code></td><td><code>string $model</code></td><td><code>RequestBuilder</code></td></tr>
+                    <tr><td><code>searchRead</code></td><td><code>string $model, ?Domain, ?array $fields, int $offset, ?int $limit, ?string $order, ?Context</code></td><td><code>array</code></td></tr>
+                    <tr><td><code>search</code></td><td><code>string $model, ?Domain, int $offset, ?int $limit, ?string $order, ?Context</code></td><td><code>array</code></td></tr>
+                    <tr><td><code>read</code></td><td><code>string $model, array $ids, ?array $fields, ?string $load, ?Context</code></td><td><code>array</code></td></tr>
+                    <tr><td><code>create</code></td><td><code>string $model, array $values, ?Context</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>write</code></td><td><code>string $model, array $ids, array $values, ?Context</code></td><td><code>bool</code></td></tr>
+                    <tr><td><code>unlink</code></td><td><code>string $model, array $ids, ?Context</code></td><td><code>bool</code></td></tr>
+                    <tr><td><code>count</code></td><td><code>string $model, ?Domain, ?Context</code></td><td><code>int</code></td></tr>
+                    <tr><td><code>fieldsGet</code></td><td><code>string $model, ?array $attributes, ?Context</code></td><td><code>array</code></td></tr>
+                    <tr><td><code>execute</code></td><td><code>string $model, string $method, array $params</code></td><td><code>mixed</code></td></tr>
+                    <tr><td><code>getClient</code></td><td>-</td><td><code>HttpClient</code></td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Class: Config -->
+        <section id="class-config">
+            <h3>Config</h3>
+            <div class="class-card">
+                <h4>Config</h4>
+                <div class="namespace">Obuchmann\OdooJsonApi\Config</div>
+                <p>Readonly value object holding connection credentials.</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>url</code></td><td><code>string</code></td><td>Odoo instance base URL</td></tr>
+                    <tr><td><code>apiKey</code></td><td><code>string</code></td><td>API key for Bearer authentication</td></tr>
+                    <tr><td><code>database</code></td><td><code>?string</code></td><td>Optional database name</td></tr>
+                </tbody>
+            </table>
+            <table>
+                <thead>
+                    <tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>getBaseUrl()</code></td><td><code>string</code></td><td>URL with trailing slash stripped</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Class: Domain -->
+        <section id="class-domain">
+            <h3>Domain</h3>
+            <div class="class-card">
+                <h4>Domain</h4>
+                <div class="namespace">Obuchmann\OdooJsonApi\Domain</div>
+                <p>Builds Odoo domain filter expressions. Supports AND conditions via <code>where()</code> and OR conditions via <code>orWhere()</code>.</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th>Method</th><th>Parameters</th><th>Returns</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>__construct</code></td><td><code>array $conditions = []</code></td><td>-</td></tr>
+                    <tr><td><code>where</code></td><td><code>string $field, string $operator, mixed $value</code></td><td><code>static</code></td></tr>
+                    <tr><td><code>orWhere</code></td><td><code>string $field, string $operator, mixed $value</code></td><td><code>static</code></td></tr>
+                    <tr><td><code>isEmpty</code></td><td>-</td><td><code>bool</code></td></tr>
+                    <tr><td><code>toArray</code></td><td>-</td><td><code>array</code></td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Class: Context -->
+        <section id="class-context">
+            <h3>Context</h3>
+            <div class="class-card">
+                <h4>Context</h4>
+                <div class="namespace">Obuchmann\OdooJsonApi\Context</div>
+                <p>Holds key-value pairs sent as Odoo context (language, timezone, custom flags).</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th>Method</th><th>Parameters</th><th>Returns</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>__construct</code></td><td><code>array $values = []</code></td><td>-</td></tr>
+                    <tr><td><code>set</code></td><td><code>string $key, mixed $value</code></td><td><code>static</code></td></tr>
+                    <tr><td><code>merge</code></td><td><code>array $values</code></td><td><code>static</code></td></tr>
+                    <tr><td><code>toArray</code></td><td>-</td><td><code>array</code></td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Class: RequestBuilder -->
+        <section id="class-request-builder">
+            <h3>RequestBuilder</h3>
+            <div class="class-card">
+                <h4>RequestBuilder</h4>
+                <div class="namespace">Obuchmann\OdooJsonApi\Request\RequestBuilder</div>
+                <p>Fluent builder returned by <code>$odoo->model()</code>. Composes traits for domain, fields, limit, offset, order, groupBy, and context.</p>
+            </div>
+
+            <p>See the <a href="#request-builder">Request Builder</a> usage section above for all available methods.</p>
+        </section>
+
+        <!-- Class: Response -->
+        <section id="class-response">
+            <h3>Response</h3>
+            <div class="class-card">
+                <h4>Response</h4>
+                <div class="namespace">Obuchmann\OdooJsonApi\Request\Response</div>
+                <p>Readonly value object wrapping Odoo API responses.</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th>Property / Method</th><th>Type</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>statusCode</code></td><td><code>int</code></td><td>HTTP status code</td></tr>
+                    <tr><td><code>result</code></td><td><code>mixed</code></td><td>Parsed result from the API</td></tr>
+                    <tr><td><code>error</code></td><td><code>?array</code></td><td>Error data if the response is an error</td></tr>
+                    <tr><td><code>isSuccess()</code></td><td><code>bool</code></td><td>True if 2xx status and no error</td></tr>
+                    <tr><td><code>toArray()</code></td><td><code>array</code></td><td>Result as array</td></tr>
+                    <tr><td><code>toObject()</code></td><td><code>stdClass</code></td><td>Result as object</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Class: HttpClient -->
+        <section id="class-http-client">
+            <h3>HttpClient</h3>
+            <div class="class-card">
+                <h4>HttpClient</h4>
+                <div class="namespace">Obuchmann\OdooJsonApi\Client\HttpClient</div>
+                <p>Low-level HTTP client that sends requests to the Odoo JSON-2 API endpoint (<code>/json/2/{model}/{method}</code>). Handles Bearer auth, database header, JSON encoding/decoding, and error mapping.</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th>Method</th><th>Parameters</th><th>Returns</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>request</code></td><td><code>string $model, string $method, array $params</code></td><td><code>Response</code></td></tr>
+                    <tr><td><code>get</code></td><td><code>string $path</code></td><td><code>array</code></td></tr>
+                </tbody>
+            </table>
+
+            <div class="class-card">
+                <h4>HttpClientFactory</h4>
+                <div class="namespace">Obuchmann\OdooJsonApi\Client\HttpClientFactory</div>
+                <p>Static factory that auto-discovers PSR-18/PSR-17 implementations (Guzzle, Nyholm).</p>
+            </div>
+        </section>
+
+        <!-- Exceptions -->
+        <section id="exceptions">
+            <h3>Exceptions</h3>
+            <p>All exceptions extend <code>OdooException</code>, which extends PHP's <code>RuntimeException</code>.</p>
+
+            <table>
+                <thead>
+                    <tr><th>Class</th><th>HTTP Status</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>OdooException</code></td><td>Any</td><td>Base exception with <code>getHttpStatusCode()</code> and <code>getErrorData()</code></td></tr>
+                    <tr><td><code>AuthenticationException</code></td><td>401, 403</td><td>Authentication / authorization failure</td></tr>
+                    <tr><td><code>NotFoundException</code></td><td>404</td><td>Resource not found</td></tr>
+                    <tr><td><code>ValidationException</code></td><td>400</td><td>Invalid request parameters</td></tr>
+                    <tr><td><code>ServerException</code></td><td>500+</td><td>Odoo server-side error</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Request Classes -->
+        <section id="request-classes">
+            <h3>Request Classes</h3>
+            <p>Each Odoo operation has a dedicated request class extending the abstract <code>Request</code> base class:</p>
+
+            <table>
+                <thead>
+                    <tr><th>Class</th><th>Odoo Method</th><th>Key Parameters</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>SearchReadRequest</code></td><td><code>search_read</code></td><td>domain, fields, offset, limit, order, context</td></tr>
+                    <tr><td><code>SearchRequest</code></td><td><code>search</code></td><td>domain, offset, limit, order, context</td></tr>
+                    <tr><td><code>ReadRequest</code></td><td><code>read</code></td><td>ids, fields, load, context</td></tr>
+                    <tr><td><code>SearchCountRequest</code></td><td><code>search_count</code></td><td>domain, context</td></tr>
+                    <tr><td><code>CreateRequest</code></td><td><code>create</code></td><td>values, context</td></tr>
+                    <tr><td><code>WriteRequest</code></td><td><code>write</code></td><td>ids, values, context</td></tr>
+                    <tr><td><code>UnlinkRequest</code></td><td><code>unlink</code></td><td>ids, context</td></tr>
+                    <tr><td><code>FieldsGetRequest</code></td><td><code>fields_get</code></td><td>attributes, context</td></tr>
+                    <tr><td><code>ReadGroupRequest</code></td><td><code>read_group</code></td><td>domain, fields, groupBy, offset, limit, orderBy, lazy, context</td></tr>
+                    <tr><td><code>ExecuteRequest</code></td><td>(custom)</td><td>method, params</td></tr>
+                </tbody>
+            </table>
+
+            <p>All request classes implement <code>toArray()</code> which serializes to the JSON body parameters expected by the Odoo JSON-2 API.</p>
+        </section>
+
+        <!-- Traits -->
+        <section id="traits">
+            <h3>Traits</h3>
+            <p>The <code>RequestBuilder</code> is composed of these reusable traits from <code>Obuchmann\OdooJsonApi\Request\Traits</code>:</p>
+
+            <table>
+                <thead>
+                    <tr><th>Trait</th><th>Provides</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>HasDomain</code></td><td><code>where()</code>, <code>orWhere()</code></td><td>Domain filter building</td></tr>
+                    <tr><td><code>HasFields</code></td><td><code>fields()</code></td><td>Field selection</td></tr>
+                    <tr><td><code>HasLimit</code></td><td><code>limit()</code></td><td>Result limiting</td></tr>
+                    <tr><td><code>HasOffset</code></td><td><code>offset()</code></td><td>Pagination offset</td></tr>
+                    <tr><td><code>HasOrder</code></td><td><code>orderBy()</code></td><td>Sort ordering</td></tr>
+                    <tr><td><code>HasGroupBy</code></td><td><code>groupBy()</code></td><td>Group-by field list</td></tr>
+                    <tr><td><code>HasContext</code></td><td><code>context()</code></td><td>Odoo context injection</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Architecture -->
+        <section id="architecture">
+            <h2>Architecture</h2>
+
+<pre>
+Odoo (main facade)
+ ├── Config (readonly value object)
+ ├── HttpClient (PSR-18 based)
+ │    ├── HttpClientFactory (auto-discovery)
+ │    └── Response (readonly value object)
+ ├── RequestBuilder (fluent API)
+ │    └── Traits: HasDomain, HasFields, HasLimit, HasOffset, HasOrder, HasGroupBy, HasContext
+ ├── Request (abstract base)
+ │    ├── SearchReadRequest
+ │    ├── SearchRequest
+ │    ├── ReadRequest
+ │    ├── SearchCountRequest
+ │    ├── CreateRequest
+ │    ├── WriteRequest
+ │    ├── UnlinkRequest
+ │    ├── FieldsGetRequest
+ │    ├── ReadGroupRequest
+ │    └── ExecuteRequest
+ ├── Domain (filter builder)
+ ├── Context (context values)
+ └── Exception
+      ├── OdooException (base)
+      ├── AuthenticationException (401/403)
+      ├── NotFoundException (404)
+      ├── ValidationException (400)
+      └── ServerException (500+)
+</pre>
+
+            <div class="info-box info">
+                <strong>API Endpoint Pattern</strong>
+                All requests are sent as <code>POST /json/2/{model}/{method}</code> with a JSON body containing named parameters and a <code>Bearer</code> authorization header.
+            </div>
+        </section>
+
+        <!-- Testing -->
+        <section id="testing">
+            <h2>Testing</h2>
+
+<pre><span class="cm"># Run unit tests</span>
+composer test:unit
+
+<span class="cm"># Run static analysis</span>
+composer analyse
+
+<span class="cm"># Run integration tests (requires running Odoo 19 instance)</span>
+cd docker &amp;&amp; docker compose up -d
+ODOO_HOST=http://localhost:8069 ODOO_API_KEY=your-key ODOO_DATABASE=odoo composer test:integration</pre>
+        </section>
+
+    </main>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <p>
+        <strong>Odoo JSON API</strong> &mdash; MIT License &mdash;
+        Created by <a href="https://github.com/obuchmann">Oliver Buchmann</a> &mdash;
+        <a href="https://github.com/obuchmann/odoo-json-api">View on GitHub</a>
+    </p>
+</footer>
+
+</body>
+</html>
