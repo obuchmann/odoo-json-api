@@ -1,8 +1,11 @@
 name: Integration Tests
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   integration-tests:
@@ -78,4 +81,15 @@ jobs:
           ODOO_HOST: http://localhost:8069
           ODOO_API_KEY: ${{ steps.odoo-key.outputs.key }}
           ODOO_DATABASE: odoo
-        run: composer test:integration
+        run: |
+          mkdir -p /tmp/test-results
+          composer test:integration -- --log-junit /tmp/test-results/integration.xml
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1.9.1
+        if: always()
+        with:
+          name: Integration Test Results
+          path: /tmp/test-results/integration.xml
+          reporter: java-junit
+          fail-on-error: false
