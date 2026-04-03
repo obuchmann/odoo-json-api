@@ -49,9 +49,8 @@ jobs:
         run: |
           RAW=$(printf '%s\n' \
             'admin = env["res.users"].search([("login","=","admin")], limit=1)' \
-            'env_a = env(user=admin)' \
-            'key = env_a["res.users.apikeys"]._generate("rpc", "CI")' \
-            'env_a.cr.commit()' \
+            'key = env["res.users.apikeys"].with_user(admin)._generate(None, "CI", False)' \
+            'env.cr.commit()' \
             'print("CI_API_KEY=" + key)' \
             | docker compose -f docker/docker-compose.yml exec -T odoo \
               odoo shell -d odoo --no-http -c /etc/odoo/odoo.conf --log-level=error 2>/dev/null)
