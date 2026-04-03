@@ -47,9 +47,9 @@ class OdooTest extends TestCase
         $mockClient->method('sendRequest')
             ->with($this->callback(function (RequestInterface $request): bool {
                 $body = json_decode((string) $request->getBody(), true);
-                return $body === ['values' => ['name' => 'New Partner']];
+                return $body === ['vals_list' => [['name' => 'New Partner']]];
             }))
-            ->willReturn(new Response(200, [], json_encode(42)));
+            ->willReturn(new Response(200, [], json_encode([42])));
 
         $odoo = $this->createOdoo($mockClient);
         $id = $odoo->create('res.partner', ['name' => 'New Partner']);

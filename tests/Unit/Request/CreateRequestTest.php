@@ -23,7 +23,7 @@ class CreateRequestTest extends TestCase
         $request = new CreateRequest('res.partner', ['name' => 'Test', 'email' => 'test@example.com']);
 
         $this->assertSame([
-            'values' => ['name' => 'Test', 'email' => 'test@example.com'],
+            'vals_list' => [['name' => 'Test', 'email' => 'test@example.com']],
         ], $request->toArray());
     }
 

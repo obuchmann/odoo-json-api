@@ -23,7 +23,7 @@ class WriteRequestTest extends TestCase
 
         $this->assertSame([
             'ids' => [1, 2],
-            'values' => ['name' => 'Updated'],
+            'vals' => ['name' => 'Updated'],
         ], $request->toArray());
     }
 }
