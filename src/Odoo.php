@@ -127,7 +127,14 @@ class Odoo
             context: $context,
         );
 
-        return (int) $this->call($request);
+        $result = $this->call($request);
+
+        // JSON2 API returns an array of IDs for create (vals_list); extract the first one.
+        if (is_array($result)) {
+            return (int) ($result[0] ?? 0);
+        }
+
+        return (int) $result;
     }
 
     /**

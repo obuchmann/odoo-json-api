@@ -21,7 +21,7 @@ class CreateRequest extends Request
 
     public function toArray(): array
     {
-        $params = ['values' => $this->values];
+        $params = ['vals_list' => [$this->values]];
 
         if ($this->context !== null) {
             $params['context'] = $this->context->toArray();

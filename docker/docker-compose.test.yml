@@ -1,0 +1,28 @@
+services:
+  php:
+    image: php:8.3-cli
+    working_dir: /app
+    volumes:
+      - ../:/app
+    environment:
+      - ODOO_HOST=http://odoo:8069
+      - ODOO_DATABASE=odoo
+      - ODOO_API_KEY=${ODOO_API_KEY}
+    depends_on:
+      - odoo
+    networks:
+      - docker_default
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+        composer install --no-interaction
+        vendor/bin/phpunit --testsuite Integration
+
+  odoo:
+    external: true
+    container_name: docker-odoo-1
+
+networks:
+  docker_default:
+    external: true

@@ -25,7 +25,7 @@ class WriteRequest extends Request
     {
         $params = [
             'ids' => $this->ids,
-            'values' => $this->values,
+            'vals' => $this->values,
         ];
 
         if ($this->context !== null) {
