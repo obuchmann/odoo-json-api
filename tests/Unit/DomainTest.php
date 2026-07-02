@@ -46,10 +46,50 @@ class DomainTest extends TestCase
                ->orWhere('email', 'ilike', 'test@');
 
         $this->assertSame([
-            ['name', '=', 'Test'],
             '|',
+            ['name', '=', 'Test'],
             ['email', 'ilike', 'test@'],
         ], $domain->toArray());
+    }
+
+    public function testOrWhereAfterMultipleWhere(): void
+    {
+        $domain = new Domain();
+        $domain->where('active', '=', true)
+               ->where('name', '=', 'Test')
+               ->orWhere('email', 'ilike', 'test@');
+
+        // active AND (name OR email)
+        $this->assertSame([
+            ['active', '=', true],
+            '|',
+            ['name', '=', 'Test'],
+            ['email', 'ilike', 'test@'],
+        ], $domain->toArray());
+    }
+
+    public function testChainedOrWhere(): void
+    {
+        $domain = new Domain();
+        $domain->where('name', '=', 'A')
+               ->orWhere('name', '=', 'B')
+               ->orWhere('name', '=', 'C');
+
+        $this->assertSame([
+            '|',
+            ['name', '=', 'A'],
+            '|',
+            ['name', '=', 'B'],
+            ['name', '=', 'C'],
+        ], $domain->toArray());
+    }
+
+    public function testOrWhereOnEmptyDomainActsAsWhere(): void
+    {
+        $domain = new Domain();
+        $domain->orWhere('name', '=', 'Test');
+
+        $this->assertSame([['name', '=', 'Test']], $domain->toArray());
     }
 
     public function testConstructWithInitialConditions(): void

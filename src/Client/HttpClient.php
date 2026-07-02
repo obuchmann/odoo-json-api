@@ -58,25 +58,28 @@ class HttpClient
         $responseBody = (string) $httpResponse->getBody();
         $decoded = json_decode($responseBody, true);
 
-        $error = null;
-        $result = $decoded;
-
-        if (is_array($decoded)) {
-            $error = $decoded['error'] ?? null;
-            $result = $decoded['result'] ?? $decoded;
+        if ($statusCode >= 400) {
+            // JSON-2 errors carry the error object directly as the body,
+            // e.g. {"name": "odoo.exceptions.ValidationError", "message": "..."}.
+            $this->throwForStatus($statusCode, new Response(
+                statusCode: $statusCode,
+                result: null,
+                error: is_array($decoded) ? $decoded : null,
+            ));
         }
 
-        $response = new Response(
+        if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+            throw new OdooException(
+                message: 'Invalid JSON response from Odoo: ' . json_last_error_msg(),
+                httpStatusCode: $statusCode,
+            );
+        }
+
+        // JSON-2 success: the body is the bare JSON-serialized return value.
+        return new Response(
             statusCode: $statusCode,
-            result: $result,
-            error: is_array($error) ? $error : null,
+            result: $decoded,
         );
-
-        if (!$response->isSuccess()) {
-            $this->throwForStatus($statusCode, $response);
-        }
-
-        return $response;
     }
 
     /**
@@ -112,8 +115,8 @@ class HttpClient
         if ($statusCode >= 400) {
             $this->throwForStatus($statusCode, new Response(
                 statusCode: $statusCode,
-                result: $decoded,
-                error: is_array($decoded) ? ($decoded['error'] ?? null) : null,
+                result: null,
+                error: is_array($decoded) ? $decoded : null,
             ));
         }
 
@@ -127,7 +130,8 @@ class HttpClient
         $exceptionClass = match (true) {
             $statusCode === 401, $statusCode === 403 => AuthenticationException::class,
             $statusCode === 404 => NotFoundException::class,
-            $statusCode === 400 => ValidationException::class,
+            // Odoo raises UserError/ValidationError as 422 Unprocessable Entity.
+            $statusCode === 400, $statusCode === 422 => ValidationException::class,
             $statusCode >= 500 => ServerException::class,
             default => OdooException::class,
         };
@@ -143,13 +147,12 @@ class HttpClient
     private function extractErrorMessage(Response $response): string
     {
         if ($response->error !== null) {
-            $data = $response->error['data'] ?? [];
-            if (is_array($data) && isset($data['message']) && is_string($data['message'])) {
-                return $data['message'];
+            if (isset($response->error['message']) && is_string($response->error['message']) && $response->error['message'] !== '') {
+                return $response->error['message'];
             }
 
-            if (isset($response->error['message']) && is_string($response->error['message'])) {
-                return $response->error['message'];
+            if (isset($response->error['name']) && is_string($response->error['name']) && $response->error['name'] !== '') {
+                return $response->error['name'];
             }
         }
 

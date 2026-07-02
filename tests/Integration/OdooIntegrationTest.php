@@ -132,4 +132,60 @@ class OdooIntegrationTest extends TestCase
         $this->assertIsInt($count);
         $this->assertGreaterThanOrEqual(0, $count);
     }
+
+    public function testSearchReadWithOrDomain(): void
+    {
+        $domain = new Domain();
+        $domain->where('is_company', '=', true)
+               ->orWhere('is_company', '=', false);
+
+        $partners = $this->odoo->searchRead(
+            'res.partner',
+            $domain,
+            fields: ['name'],
+            limit: 5,
+        );
+
+        $this->assertIsArray($partners);
+    }
+
+    public function testRequestBuilderCreateReturnsRealId(): void
+    {
+        $id = $this->odoo->model('res.partner')->create([
+            'name' => 'OdooJsonApi Builder Test Partner',
+        ]);
+        $this->createdPartnerId = $id;
+
+        $this->assertGreaterThan(1, $id);
+
+        $record = $this->odoo->model('res.partner')->fields(['name'])->find($id);
+        $this->assertNotNull($record);
+        $this->assertSame('OdooJsonApi Builder Test Partner', $record['name']);
+    }
+
+    public function testReadGroup(): void
+    {
+        $groups = $this->odoo->readGroup(
+            'res.partner',
+            groupBy: ['is_company'],
+            aggregates: ['__count'],
+        );
+
+        $this->assertIsArray($groups);
+        foreach ($groups as $group) {
+            $this->assertArrayHasKey('is_company', $group);
+            $this->assertArrayHasKey('__count', $group);
+        }
+    }
+
+    public function testErrorContainsOdooMessage(): void
+    {
+        try {
+            $this->odoo->execute('res.partner', 'nonexistent_method_odoo_json_api', []);
+            $this->fail('Expected OdooException');
+        } catch (\Obuchmann\OdooJsonApi\Exception\OdooException $e) {
+            $this->assertNotSame('', $e->getMessage());
+            $this->assertNotNull($e->getHttpStatusCode());
+        }
+    }
 }

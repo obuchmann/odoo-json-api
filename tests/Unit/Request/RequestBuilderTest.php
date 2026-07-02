@@ -105,7 +105,7 @@ class RequestBuilderTest extends TestCase
     {
         $mockClient = $this->createMock(ClientInterface::class);
         $mockClient->method('sendRequest')
-            ->willReturn(new Response(200, [], json_encode(99)));
+            ->willReturn(new Response(200, [], json_encode([99])));
 
         $builder = $this->createBuilder($mockClient);
         $this->assertSame(99, $builder->create(['name' => 'New']));
@@ -129,5 +129,37 @@ class RequestBuilderTest extends TestCase
 
         $builder = $this->createBuilder($mockClient);
         $this->assertTrue($builder->delete([1, 2]));
+    }
+
+    public function testReadGroupSendsFormattedReadGroup(): void
+    {
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->expects($this->once())
+            ->method('sendRequest')
+            ->with($this->callback(function (RequestInterface $request): bool {
+                $body = json_decode((string) $request->getBody(), true);
+                return str_contains((string) $request->getUri(), '/json/2/res.partner/formatted_read_group')
+                    && $body['groupby'] === ['country_id']
+                    && $body['aggregates'] === ['__count'];
+            }))
+            ->willReturn(new Response(200, [], json_encode([])));
+
+        $builder = $this->createBuilder($mockClient);
+        $builder->readGroup(['country_id'], ['__count']);
+    }
+
+    public function testReadGroupUsesGroupBySetter(): void
+    {
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->expects($this->once())
+            ->method('sendRequest')
+            ->with($this->callback(function (RequestInterface $request): bool {
+                $body = json_decode((string) $request->getBody(), true);
+                return $body['groupby'] === ['is_company'];
+            }))
+            ->willReturn(new Response(200, [], json_encode([])));
+
+        $builder = $this->createBuilder($mockClient);
+        $builder->groupBy(['is_company'])->readGroup();
     }
 }

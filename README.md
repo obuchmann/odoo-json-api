@@ -92,8 +92,16 @@ $odoo->unlink('res.partner', [$id]);
 // Get field definitions
 $fields = $odoo->fieldsGet('res.partner', ['string', 'type']);
 
-// Call any method
+// Grouped/aggregated data (formatted_read_group)
+$groups = $odoo->readGroup(
+    'res.partner',
+    groupBy: ['country_id'],
+    aggregates: ['__count'],
+);
+
+// Call any method (all arguments are named; record methods take an 'ids' key)
 $result = $odoo->execute('res.partner', 'custom_method', ['param' => 'value']);
+$result = $odoo->execute('res.partner', 'action_archive', ['ids' => [1, 2]]);
 ```
 
 ### Fluent Request Builder
@@ -139,6 +147,45 @@ $domain = new Domain();
 $domain->where('name', 'ilike', 'test')
        ->where('active', '=', true)
        ->orWhere('email', '!=', false);
+```
+
+`orWhere()` combines with the *previous* condition (Odoo prefix notation):
+`where(A)->orWhere(B)` produces `['|', A, B]` (A OR B), and
+`where(A)->where(B)->orWhere(C)` produces `[A, '|', B, C]` (A AND (B OR C)).
+
+### Grouping / Aggregation
+
+`readGroup()` wraps Odoo's `formatted_read_group` (the JSON-2 replacement for
+the deprecated `read_group`):
+
+```php
+$groups = $odoo->model('res.partner')
+    ->where('active', '=', true)
+    ->readGroup(['country_id'], ['__count', 'credit_limit:sum']);
+```
+
+### Error Handling
+
+Errors are raised as exceptions mapped from the HTTP status code:
+
+| Status | Exception |
+|---|---|
+| 401 / 403 | `AuthenticationException` |
+| 404 | `NotFoundException` |
+| 400 / 422 | `ValidationException` (Odoo `UserError`/`ValidationError`) |
+| 5xx | `ServerException` |
+| other | `OdooException` (base class of all of the above) |
+
+```php
+use Obuchmann\OdooJsonApi\Exception\OdooException;
+
+try {
+    $odoo->create('res.partner', ['email' => 'not-an-email']);
+} catch (OdooException $e) {
+    $e->getMessage();        // Odoo's error message
+    $e->getHttpStatusCode(); // e.g. 422
+    $e->getErrorData();      // full JSON-2 error object, e.g. ['name' => 'odoo.exceptions.ValidationError', ...]
+}
 ```
 
 ### Context

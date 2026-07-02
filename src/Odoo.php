@@ -203,16 +203,42 @@ class Odoo
     }
 
     /**
+     * Read grouped/aggregated data via formatted_read_group.
+     *
+     * @param list<string> $groupBy
+     * @param list<string> $aggregates e.g. ['amount_total:sum', '__count']
+     * @return list<array<string, mixed>>
+     */
+    public function readGroup(
+        string $model,
+        ?Domain $domain = null,
+        array $groupBy = [],
+        array $aggregates = [],
+        ?Context $context = null,
+    ): array {
+        $request = new Request\FormattedReadGroupRequest(
+            model: $model,
+            domain: $domain ?? new Domain(),
+            groupBy: $groupBy,
+            aggregates: $aggregates,
+            context: $context,
+        );
+
+        return $this->call($request);
+    }
+
+    /**
      * Execute an arbitrary method on a model.
      *
      * @param array<string, mixed> $params
      */
-    public function execute(string $model, string $method, array $params = []): mixed
+    public function execute(string $model, string $method, array $params = [], ?Context $context = null): mixed
     {
         $request = new Request\ExecuteRequest(
             model: $model,
             method: $method,
             params: $params,
+            context: $context,
         );
 
         return $this->call($request);

@@ -160,7 +160,14 @@ class RequestBuilder
             context: $this->context,
         );
 
-        return (int) $this->execute($request);
+        $result = $this->execute($request);
+
+        // JSON2 API returns an array of IDs for create (vals_list); extract the first one.
+        if (is_array($result)) {
+            return (int) ($result[0] ?? 0);
+        }
+
+        return (int) $result;
     }
 
     /**
@@ -215,22 +222,26 @@ class RequestBuilder
     }
 
     /**
-     * Read grouped records.
+     * Read grouped/aggregated records via formatted_read_group.
      *
-     * @param list<string> $groupBy
+     * Falls back to the groupBy() value when $groupBy is omitted.
+     *
+     * @param list<string>|null $groupBy
+     * @param list<string> $aggregates e.g. ['amount_total:sum', '__count']
+     * @param list<mixed> $having
      * @return list<array<string, mixed>>
      */
-    public function readGroup(array $groupBy, bool $lazy = true): array
+    public function readGroup(?array $groupBy = null, array $aggregates = [], array $having = []): array
     {
-        $request = new ReadGroupRequest(
+        $request = new FormattedReadGroupRequest(
             model: $this->model,
             domain: $this->domain,
-            fields: $this->fields,
-            groupBy: $groupBy,
+            groupBy: $groupBy ?? $this->groupBy,
+            aggregates: $aggregates,
+            having: $having,
             offset: $this->offset,
             limit: $this->limit,
-            orderBy: $this->order,
-            lazy: $lazy,
+            order: $this->order,
             context: $this->context,
         );
 
@@ -248,6 +259,7 @@ class RequestBuilder
             model: $this->model,
             method: $method,
             params: $params,
+            context: $this->context,
         );
 
         return $this->execute($request);
