@@ -25,6 +25,22 @@ class Domain
     }
 
     /**
+     * @param list<mixed> $values
+     */
+    public function whereIn(string $field, array $values): static
+    {
+        return $this->where($field, 'in', $values);
+    }
+
+    /**
+     * @param list<mixed> $values
+     */
+    public function whereNotIn(string $field, array $values): static
+    {
+        return $this->where($field, 'not in', $values);
+    }
+
+    /**
      * OR the given condition with the previously added condition.
      *
      * Odoo domains use prefix notation, so the '|' operator is inserted

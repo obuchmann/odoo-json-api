@@ -148,6 +148,77 @@ class RequestBuilderTest extends TestCase
         $builder->readGroup(['country_id'], ['__count']);
     }
 
+    public function testCreateMany(): void
+    {
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->method('sendRequest')
+            ->willReturn(new Response(200, [], json_encode([99, 100])));
+
+        $builder = $this->createBuilder($mockClient);
+        $this->assertSame([99, 100], $builder->createMany([['name' => 'A'], ['name' => 'B']]));
+    }
+
+    public function testWhereIn(): void
+    {
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->expects($this->once())
+            ->method('sendRequest')
+            ->with($this->callback(function (RequestInterface $request): bool {
+                $body = json_decode((string) $request->getBody(), true);
+                return $body['domain'] === [['id', 'in', [1, 2, 3]]];
+            }))
+            ->willReturn(new Response(200, [], json_encode([])));
+
+        $builder = $this->createBuilder($mockClient);
+        $builder->whereIn('id', [1, 2, 3])->get();
+    }
+
+    public function testLazyPaginatesThroughAllRecords(): void
+    {
+        $pageOne = [['id' => 1], ['id' => 2]];
+        $pageTwo = [['id' => 3]];
+
+        $requests = [];
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->expects($this->exactly(2))
+            ->method('sendRequest')
+            ->willReturnCallback(function (RequestInterface $request) use (&$requests, $pageOne, $pageTwo) {
+                $requests[] = json_decode((string) $request->getBody(), true);
+                return count($requests) === 1
+                    ? new Response(200, [], json_encode($pageOne))
+                    : new Response(200, [], json_encode($pageTwo));
+            });
+
+        $builder = $this->createBuilder($mockClient);
+        $records = iterator_to_array($builder->lazy(chunkSize: 2), false);
+
+        $this->assertSame([['id' => 1], ['id' => 2], ['id' => 3]], $records);
+        $this->assertSame(2, $requests[0]['limit']);
+        $this->assertArrayNotHasKey('offset', $requests[0]);
+        $this->assertSame(2, $requests[1]['offset']);
+    }
+
+    public function testLazyHonorsTotalLimit(): void
+    {
+        $requests = [];
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->expects($this->exactly(2))
+            ->method('sendRequest')
+            ->willReturnCallback(function (RequestInterface $request) use (&$requests) {
+                $requests[] = json_decode((string) $request->getBody(), true);
+                return count($requests) === 1
+                    ? new Response(200, [], json_encode([['id' => 1], ['id' => 2]]))
+                    : new Response(200, [], json_encode([['id' => 3]]));
+            });
+
+        $builder = $this->createBuilder($mockClient);
+        $records = iterator_to_array($builder->limit(3)->lazy(chunkSize: 2), false);
+
+        $this->assertCount(3, $records);
+        $this->assertSame(2, $requests[0]['limit']);
+        $this->assertSame(1, $requests[1]['limit']);
+    }
+
     public function testReadGroupUsesGroupBySetter(): void
     {
         $mockClient = $this->createMock(ClientInterface::class);

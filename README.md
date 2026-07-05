@@ -74,13 +74,20 @@ $ids = $odoo->search('res.partner', $domain);
 // Read by IDs
 $records = $odoo->read('res.partner', [1, 2, 3], fields: ['name', 'email']);
 
-// Count
+// Count (optionally with an upper bound)
 $count = $odoo->count('res.partner', $domain);
+$count = $odoo->count('res.partner', $domain, limit: 1000);
 
 // Create
 $id = $odoo->create('res.partner', [
     'name' => 'New Partner',
     'email' => 'partner@example.com',
+]);
+
+// Create multiple records in one call
+$ids = $odoo->createMany('res.partner', [
+    ['name' => 'Partner One'],
+    ['name' => 'Partner Two'],
 ]);
 
 // Update
@@ -134,8 +141,14 @@ $count = $odoo->model('res.partner')
 
 // CRUD via builder
 $id = $odoo->model('res.partner')->create(['name' => 'New']);
+$ids = $odoo->model('res.partner')->createMany([['name' => 'A'], ['name' => 'B']]);
 $odoo->model('res.partner')->update([1, 2], ['active' => false]);
 $odoo->model('res.partner')->delete([1, 2]);
+
+// Iterate over large result sets without loading everything at once
+foreach ($odoo->model('res.partner')->fields(['name'])->lazy(chunkSize: 200) as $partner) {
+    // fetches 200 records per request, transparently paginating
+}
 ```
 
 ### Domain Filters
@@ -147,6 +160,10 @@ $domain = new Domain();
 $domain->where('name', 'ilike', 'test')
        ->where('active', '=', true)
        ->orWhere('email', '!=', false);
+
+// Convenience helpers
+$domain->whereIn('id', [1, 2, 3])
+       ->whereNotIn('state', ['draft', 'cancel']);
 ```
 
 `orWhere()` combines with the *previous* condition (Odoo prefix notation):

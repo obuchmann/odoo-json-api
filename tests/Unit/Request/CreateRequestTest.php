@@ -12,7 +12,7 @@ class CreateRequestTest extends TestCase
 {
     public function testModelAndMethod(): void
     {
-        $request = new CreateRequest('res.partner', ['name' => 'Test']);
+        $request = new CreateRequest('res.partner', [['name' => 'Test']]);
 
         $this->assertSame('res.partner', $request->getModel());
         $this->assertSame('create', $request->getMethod());
@@ -20,17 +20,29 @@ class CreateRequestTest extends TestCase
 
     public function testToArray(): void
     {
-        $request = new CreateRequest('res.partner', ['name' => 'Test', 'email' => 'test@example.com']);
+        $request = new CreateRequest('res.partner', [['name' => 'Test', 'email' => 'test@example.com']]);
 
         $this->assertSame([
             'vals_list' => [['name' => 'Test', 'email' => 'test@example.com']],
         ], $request->toArray());
     }
 
+    public function testToArrayWithMultipleRecords(): void
+    {
+        $request = new CreateRequest('res.partner', [
+            ['name' => 'One'],
+            ['name' => 'Two'],
+        ]);
+
+        $this->assertSame([
+            'vals_list' => [['name' => 'One'], ['name' => 'Two']],
+        ], $request->toArray());
+    }
+
     public function testWithContext(): void
     {
         $context = new Context(['lang' => 'fr_FR']);
-        $request = new CreateRequest('res.partner', ['name' => 'Test'], $context);
+        $request = new CreateRequest('res.partner', [['name' => 'Test']], $context);
 
         $result = $request->toArray();
         $this->assertSame(['lang' => 'fr_FR'], $result['context']);

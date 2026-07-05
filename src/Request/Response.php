@@ -28,26 +28,6 @@ readonly class Response
             return $this->result;
         }
 
-        if ($this->result instanceof \stdClass) {
-            return (array) $this->result;
-        }
-
         return [$this->result];
-    }
-
-    public function toObject(): \stdClass
-    {
-        if ($this->result instanceof \stdClass) {
-            return $this->result;
-        }
-
-        if (is_array($this->result)) {
-            return (object) $this->result;
-        }
-
-        $obj = new \stdClass();
-        $obj->result = $this->result;
-
-        return $obj;
     }
 }

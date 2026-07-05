@@ -82,47 +82,6 @@ class HttpClient
         );
     }
 
-    /**
-     * Send a GET request to a specific URL path.
-     *
-     * @return array<string, mixed>
-     */
-    public function get(string $path): array
-    {
-        $url = sprintf('%s%s', $this->config->getBaseUrl(), $path);
-
-        $request = $this->requestFactory->createRequest('GET', $url);
-        $request = $request
-            ->withHeader('Authorization', 'Bearer ' . $this->config->apiKey);
-
-        if ($this->config->database !== null) {
-            $request = $request->withHeader('X-Odoo-Database', $this->config->database);
-        }
-
-        try {
-            $httpResponse = $this->client->sendRequest($request);
-        } catch (ClientExceptionInterface $e) {
-            throw new OdooException(
-                message: 'HTTP request failed: ' . $e->getMessage(),
-                previous: $e,
-            );
-        }
-
-        $statusCode = $httpResponse->getStatusCode();
-        $responseBody = (string) $httpResponse->getBody();
-        $decoded = json_decode($responseBody, true);
-
-        if ($statusCode >= 400) {
-            $this->throwForStatus($statusCode, new Response(
-                statusCode: $statusCode,
-                result: null,
-                error: is_array($decoded) ? $decoded : null,
-            ));
-        }
-
-        return is_array($decoded) ? $decoded : [];
-    }
-
     private function throwForStatus(int $statusCode, Response $response): never
     {
         $message = $this->extractErrorMessage($response);

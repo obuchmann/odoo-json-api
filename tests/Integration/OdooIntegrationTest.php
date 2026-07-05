@@ -178,6 +178,50 @@ class OdooIntegrationTest extends TestCase
         }
     }
 
+    public function testCreateMany(): void
+    {
+        $ids = $this->odoo->createMany('res.partner', [
+            ['name' => 'OdooJsonApi Batch One'],
+            ['name' => 'OdooJsonApi Batch Two'],
+        ]);
+
+        try {
+            $this->assertCount(2, $ids);
+            foreach ($ids as $id) {
+                $this->assertIsInt($id);
+                $this->assertGreaterThan(0, $id);
+            }
+
+            $records = $this->odoo->read('res.partner', $ids, fields: ['name']);
+            $this->assertCount(2, $records);
+        } finally {
+            $this->odoo->unlink('res.partner', $ids);
+        }
+    }
+
+    public function testLazyIteration(): void
+    {
+        $count = 0;
+        foreach ($this->odoo->model('res.partner')->fields(['name'])->limit(5)->lazy(chunkSize: 2) as $record) {
+            $this->assertArrayHasKey('id', $record);
+            $count++;
+        }
+
+        $this->assertLessThanOrEqual(5, $count);
+    }
+
+    public function testWhereIn(): void
+    {
+        $ids = $this->odoo->search('res.partner', limit: 2);
+
+        $records = $this->odoo->model('res.partner')
+            ->whereIn('id', $ids)
+            ->fields(['name'])
+            ->get();
+
+        $this->assertCount(count($ids), $records);
+    }
+
     public function testErrorContainsOdooMessage(): void
     {
         try {

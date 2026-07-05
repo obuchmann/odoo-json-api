@@ -32,4 +32,14 @@ class FieldsGetRequestTest extends TestCase
             'attributes' => ['string', 'type', 'help'],
         ], $request->toArray());
     }
+
+    public function testToArrayWithAllFields(): void
+    {
+        $request = new FieldsGetRequest('res.partner', attributes: ['string'], allFields: ['name', 'email']);
+
+        $this->assertSame([
+            'allfields' => ['name', 'email'],
+            'attributes' => ['string'],
+        ], $request->toArray());
+    }
 }

@@ -99,4 +99,20 @@ class DomainTest extends TestCase
         $this->assertFalse($domain->isEmpty());
         $this->assertSame([['name', '=', 'Test']], $domain->toArray());
     }
+
+    public function testWhereIn(): void
+    {
+        $domain = new Domain();
+        $domain->whereIn('id', [1, 2, 3]);
+
+        $this->assertSame([['id', 'in', [1, 2, 3]]], $domain->toArray());
+    }
+
+    public function testWhereNotIn(): void
+    {
+        $domain = new Domain();
+        $domain->whereNotIn('state', ['draft', 'cancel']);
+
+        $this->assertSame([['state', 'not in', ['draft', 'cancel']]], $domain->toArray());
+    }
 }
