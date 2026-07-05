@@ -47,13 +47,6 @@
         "test:integration": "vendor/bin/phpunit --testsuite Integration",
         "analyse": "vendor/bin/phpstan analyse"
     },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "Obuchmann\\OdooJsonApi\\Laravel\\OdooServiceProvider"
-            ]
-        }
-    },
     "config": {
         "sort-packages": true
     }

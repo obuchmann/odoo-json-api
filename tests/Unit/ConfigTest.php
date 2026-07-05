@@ -51,4 +51,16 @@ class ConfigTest extends TestCase
 
         $this->assertSame('https://odoo.example.com', $config->getBaseUrl());
     }
+
+    public function testEmptyUrlThrows(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        new Config(url: '', apiKey: 'key');
+    }
+
+    public function testEmptyApiKeyThrows(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        new Config(url: 'https://odoo.example.com', apiKey: '');
+    }
 }

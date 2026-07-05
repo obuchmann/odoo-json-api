@@ -121,20 +121,30 @@ class Odoo
      */
     public function create(string $model, array $values, ?Context $context = null): int
     {
+        return $this->createMany($model, [$values], $context)[0] ?? 0;
+    }
+
+    /**
+     * Create multiple records in a single call.
+     *
+     * @param list<array<string, mixed>> $valsList
+     * @return list<int> the created record IDs
+     */
+    public function createMany(string $model, array $valsList, ?Context $context = null): array
+    {
         $request = new Request\CreateRequest(
             model: $model,
-            values: $values,
+            valsList: $valsList,
             context: $context,
         );
 
         $result = $this->call($request);
 
-        // JSON2 API returns an array of IDs for create (vals_list); extract the first one.
-        if (is_array($result)) {
-            return (int) ($result[0] ?? 0);
+        if (!is_array($result)) {
+            return [(int) $result];
         }
 
-        return (int) $result;
+        return array_values(array_map(intval(...), $result));
     }
 
     /**
@@ -174,11 +184,12 @@ class Odoo
     /**
      * Count records matching the domain.
      */
-    public function count(string $model, ?Domain $domain = null, ?Context $context = null): int
+    public function count(string $model, ?Domain $domain = null, ?int $limit = null, ?Context $context = null): int
     {
         $request = new Request\SearchCountRequest(
             model: $model,
             domain: $domain ?? new Domain(),
+            limit: $limit,
             context: $context,
         );
 
@@ -189,13 +200,40 @@ class Odoo
      * Get model field definitions.
      *
      * @param list<string>|null $attributes
+     * @param list<string>|null $allFields field names to describe; all fields when null
      * @return array<string, mixed>
      */
-    public function fieldsGet(string $model, ?array $attributes = null, ?Context $context = null): array
+    public function fieldsGet(string $model, ?array $attributes = null, ?array $allFields = null, ?Context $context = null): array
     {
         $request = new Request\FieldsGetRequest(
             model: $model,
             attributes: $attributes,
+            allFields: $allFields,
+            context: $context,
+        );
+
+        return $this->call($request);
+    }
+
+    /**
+     * Read grouped/aggregated data via formatted_read_group.
+     *
+     * @param list<string> $groupBy
+     * @param list<string> $aggregates e.g. ['amount_total:sum', '__count']
+     * @return list<array<string, mixed>>
+     */
+    public function readGroup(
+        string $model,
+        ?Domain $domain = null,
+        array $groupBy = [],
+        array $aggregates = [],
+        ?Context $context = null,
+    ): array {
+        $request = new Request\FormattedReadGroupRequest(
+            model: $model,
+            domain: $domain ?? new Domain(),
+            groupBy: $groupBy,
+            aggregates: $aggregates,
             context: $context,
         );
 
@@ -207,12 +245,13 @@ class Odoo
      *
      * @param array<string, mixed> $params
      */
-    public function execute(string $model, string $method, array $params = []): mixed
+    public function execute(string $model, string $method, array $params = [], ?Context $context = null): mixed
     {
         $request = new Request\ExecuteRequest(
             model: $model,
             method: $method,
             params: $params,
+            context: $context,
         );
 
         return $this->call($request);

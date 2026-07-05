@@ -29,4 +29,14 @@ class SearchCountRequestTest extends TestCase
             'domain' => [['active', '=', true]],
         ], $request->toArray());
     }
+
+    public function testToArrayWithLimit(): void
+    {
+        $request = new SearchCountRequest('res.partner', new Domain(), limit: 100);
+
+        $this->assertSame([
+            'domain' => [],
+            'limit' => 100,
+        ], $request->toArray());
+    }
 }

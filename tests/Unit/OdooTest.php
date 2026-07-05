@@ -57,6 +57,37 @@ class OdooTest extends TestCase
         $this->assertSame(42, $id);
     }
 
+    public function testCreateMany(): void
+    {
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->method('sendRequest')
+            ->with($this->callback(function (RequestInterface $request): bool {
+                $body = json_decode((string) $request->getBody(), true);
+                return $body === ['vals_list' => [['name' => 'One'], ['name' => 'Two']]];
+            }))
+            ->willReturn(new Response(200, [], json_encode([42, 43])));
+
+        $odoo = $this->createOdoo($mockClient);
+        $ids = $odoo->createMany('res.partner', [['name' => 'One'], ['name' => 'Two']]);
+
+        $this->assertSame([42, 43], $ids);
+    }
+
+    public function testCountWithLimit(): void
+    {
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->method('sendRequest')
+            ->with($this->callback(function (RequestInterface $request): bool {
+                $body = json_decode((string) $request->getBody(), true);
+                return $body === ['domain' => [], 'limit' => 10];
+            }))
+            ->willReturn(new Response(200, [], json_encode(10)));
+
+        $odoo = $this->createOdoo($mockClient);
+
+        $this->assertSame(10, $odoo->count('res.partner', limit: 10));
+    }
+
     public function testWrite(): void
     {
         $mockClient = $this->createMock(ClientInterface::class);

@@ -9,11 +9,11 @@ use Obuchmann\OdooJsonApi\Context;
 class CreateRequest extends Request
 {
     /**
-     * @param array<string, mixed> $values
+     * @param list<array<string, mixed>> $valsList
      */
     public function __construct(
         string $model,
-        private readonly array $values,
+        private readonly array $valsList,
         private readonly ?Context $context = null,
     ) {
         parent::__construct($model, 'create');
@@ -21,7 +21,7 @@ class CreateRequest extends Request
 
     public function toArray(): array
     {
-        $params = ['vals_list' => [$this->values]];
+        $params = ['vals_list' => $this->valsList];
 
         if ($this->context !== null) {
             $params['context'] = $this->context->toArray();

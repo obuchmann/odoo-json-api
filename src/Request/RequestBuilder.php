@@ -134,13 +134,62 @@ class RequestBuilder
     }
 
     /**
-     * Count records matching the domain.
+     * Iterate over all matching records, fetching them in chunks.
+     *
+     * Honors offset() as the starting position and limit() as the total
+     * maximum number of records.
+     *
+     * @return \Generator<int, array<string, mixed>>
+     */
+    public function lazy(int $chunkSize = 100): \Generator
+    {
+        if ($chunkSize < 1) {
+            throw new \InvalidArgumentException('Chunk size must be at least 1.');
+        }
+
+        $offset = $this->offset;
+        $remaining = $this->limit;
+
+        while ($remaining === null || $remaining > 0) {
+            $size = $remaining !== null ? min($chunkSize, $remaining) : $chunkSize;
+
+            $request = new SearchReadRequest(
+                model: $this->model,
+                domain: $this->domain,
+                fields: $this->fields,
+                offset: $offset,
+                limit: $size,
+                order: $this->order,
+                context: $this->context,
+            );
+
+            /** @var list<array<string, mixed>> $records */
+            $records = $this->execute($request);
+
+            foreach ($records as $record) {
+                yield $record;
+            }
+
+            if (count($records) < $size) {
+                return;
+            }
+
+            $offset += $size;
+            if ($remaining !== null) {
+                $remaining -= $size;
+            }
+        }
+    }
+
+    /**
+     * Count records matching the domain, honoring limit() as an upper bound.
      */
     public function count(): int
     {
         $request = new SearchCountRequest(
             model: $this->model,
             domain: $this->domain,
+            limit: $this->limit,
             context: $this->context,
         );
 
@@ -154,13 +203,30 @@ class RequestBuilder
      */
     public function create(array $values): int
     {
+        return $this->createMany([$values])[0] ?? 0;
+    }
+
+    /**
+     * Create multiple records in a single call.
+     *
+     * @param list<array<string, mixed>> $valsList
+     * @return list<int> the created record IDs
+     */
+    public function createMany(array $valsList): array
+    {
         $request = new CreateRequest(
             model: $this->model,
-            values: $values,
+            valsList: $valsList,
             context: $this->context,
         );
 
-        return (int) $this->execute($request);
+        $result = $this->execute($request);
+
+        if (!is_array($result)) {
+            return [(int) $result];
+        }
+
+        return array_values(array_map(intval(...), $result));
     }
 
     /**
@@ -201,13 +267,15 @@ class RequestBuilder
      * Get model field definitions.
      *
      * @param list<string>|null $attributes
+     * @param list<string>|null $allFields field names to describe; all fields when null
      * @return array<string, mixed>
      */
-    public function fieldsGet(?array $attributes = null): array
+    public function fieldsGet(?array $attributes = null, ?array $allFields = null): array
     {
         $request = new FieldsGetRequest(
             model: $this->model,
             attributes: $attributes,
+            allFields: $allFields,
             context: $this->context,
         );
 
@@ -215,22 +283,26 @@ class RequestBuilder
     }
 
     /**
-     * Read grouped records.
+     * Read grouped/aggregated records via formatted_read_group.
      *
-     * @param list<string> $groupBy
+     * Falls back to the groupBy() value when $groupBy is omitted.
+     *
+     * @param list<string>|null $groupBy
+     * @param list<string> $aggregates e.g. ['amount_total:sum', '__count']
+     * @param list<mixed> $having
      * @return list<array<string, mixed>>
      */
-    public function readGroup(array $groupBy, bool $lazy = true): array
+    public function readGroup(?array $groupBy = null, array $aggregates = [], array $having = []): array
     {
-        $request = new ReadGroupRequest(
+        $request = new FormattedReadGroupRequest(
             model: $this->model,
             domain: $this->domain,
-            fields: $this->fields,
-            groupBy: $groupBy,
+            groupBy: $groupBy ?? $this->groupBy,
+            aggregates: $aggregates,
+            having: $having,
             offset: $this->offset,
             limit: $this->limit,
-            orderBy: $this->order,
-            lazy: $lazy,
+            order: $this->order,
             context: $this->context,
         );
 
@@ -248,6 +320,7 @@ class RequestBuilder
             model: $this->model,
             method: $method,
             params: $params,
+            context: $this->context,
         );
 
         return $this->execute($request);

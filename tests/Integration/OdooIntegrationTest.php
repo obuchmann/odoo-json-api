@@ -132,4 +132,104 @@ class OdooIntegrationTest extends TestCase
         $this->assertIsInt($count);
         $this->assertGreaterThanOrEqual(0, $count);
     }
+
+    public function testSearchReadWithOrDomain(): void
+    {
+        $domain = new Domain();
+        $domain->where('is_company', '=', true)
+               ->orWhere('is_company', '=', false);
+
+        $partners = $this->odoo->searchRead(
+            'res.partner',
+            $domain,
+            fields: ['name'],
+            limit: 5,
+        );
+
+        $this->assertIsArray($partners);
+    }
+
+    public function testRequestBuilderCreateReturnsRealId(): void
+    {
+        $id = $this->odoo->model('res.partner')->create([
+            'name' => 'OdooJsonApi Builder Test Partner',
+        ]);
+        $this->createdPartnerId = $id;
+
+        $this->assertGreaterThan(1, $id);
+
+        $record = $this->odoo->model('res.partner')->fields(['name'])->find($id);
+        $this->assertNotNull($record);
+        $this->assertSame('OdooJsonApi Builder Test Partner', $record['name']);
+    }
+
+    public function testReadGroup(): void
+    {
+        $groups = $this->odoo->readGroup(
+            'res.partner',
+            groupBy: ['is_company'],
+            aggregates: ['__count'],
+        );
+
+        $this->assertIsArray($groups);
+        foreach ($groups as $group) {
+            $this->assertArrayHasKey('is_company', $group);
+            $this->assertArrayHasKey('__count', $group);
+        }
+    }
+
+    public function testCreateMany(): void
+    {
+        $ids = $this->odoo->createMany('res.partner', [
+            ['name' => 'OdooJsonApi Batch One'],
+            ['name' => 'OdooJsonApi Batch Two'],
+        ]);
+
+        try {
+            $this->assertCount(2, $ids);
+            foreach ($ids as $id) {
+                $this->assertIsInt($id);
+                $this->assertGreaterThan(0, $id);
+            }
+
+            $records = $this->odoo->read('res.partner', $ids, fields: ['name']);
+            $this->assertCount(2, $records);
+        } finally {
+            $this->odoo->unlink('res.partner', $ids);
+        }
+    }
+
+    public function testLazyIteration(): void
+    {
+        $count = 0;
+        foreach ($this->odoo->model('res.partner')->fields(['name'])->limit(5)->lazy(chunkSize: 2) as $record) {
+            $this->assertArrayHasKey('id', $record);
+            $count++;
+        }
+
+        $this->assertLessThanOrEqual(5, $count);
+    }
+
+    public function testWhereIn(): void
+    {
+        $ids = $this->odoo->search('res.partner', limit: 2);
+
+        $records = $this->odoo->model('res.partner')
+            ->whereIn('id', $ids)
+            ->fields(['name'])
+            ->get();
+
+        $this->assertCount(count($ids), $records);
+    }
+
+    public function testErrorContainsOdooMessage(): void
+    {
+        try {
+            $this->odoo->execute('res.partner', 'nonexistent_method_odoo_json_api', []);
+            $this->fail('Expected OdooException');
+        } catch (\Obuchmann\OdooJsonApi\Exception\OdooException $e) {
+            $this->assertNotSame('', $e->getMessage());
+            $this->assertNotNull($e->getHttpStatusCode());
+        }
+    }
 }

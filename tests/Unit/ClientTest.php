@@ -10,6 +10,7 @@ use Obuchmann\OdooJsonApi\Client\HttpClient;
 use Obuchmann\OdooJsonApi\Config;
 use Obuchmann\OdooJsonApi\Exception\AuthenticationException;
 use Obuchmann\OdooJsonApi\Exception\NotFoundException;
+use Obuchmann\OdooJsonApi\Exception\OdooException;
 use Obuchmann\OdooJsonApi\Exception\ServerException;
 use Obuchmann\OdooJsonApi\Exception\ValidationException;
 use PHPUnit\Framework\TestCase;
@@ -135,10 +136,8 @@ class ClientTest extends TestCase
     public function testThrowsAuthenticationExceptionOn401(): void
     {
         $errorBody = json_encode([
-            'error' => [
-                'message' => 'Unauthorized',
-                'data' => ['message' => 'Invalid API key'],
-            ],
+            'name' => 'odoo.exceptions.AccessDenied',
+            'message' => 'Invalid apikey',
         ]);
         $mockClient = $this->createMock(ClientInterface::class);
         $mockClient->method('sendRequest')
@@ -147,13 +146,15 @@ class ClientTest extends TestCase
         $client = $this->createClient($mockClient);
 
         $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessage('Invalid apikey');
         $client->request('res.partner', 'read');
     }
 
     public function testThrowsAuthenticationExceptionOn403(): void
     {
         $errorBody = json_encode([
-            'error' => ['message' => 'Forbidden'],
+            'name' => 'odoo.exceptions.AccessError',
+            'message' => 'You are not allowed to access this record.',
         ]);
         $mockClient = $this->createMock(ClientInterface::class);
         $mockClient->method('sendRequest')
@@ -167,9 +168,13 @@ class ClientTest extends TestCase
 
     public function testThrowsNotFoundExceptionOn404(): void
     {
+        $errorBody = json_encode([
+            'name' => 'odoo.exceptions.MissingError',
+            'message' => 'Record does not exist or has been deleted.',
+        ]);
         $mockClient = $this->createMock(ClientInterface::class);
         $mockClient->method('sendRequest')
-            ->willReturn(new Response(404, [], json_encode(['error' => ['message' => 'Not found']])));
+            ->willReturn(new Response(404, [], $errorBody));
 
         $client = $this->createClient($mockClient);
 
@@ -179,9 +184,13 @@ class ClientTest extends TestCase
 
     public function testThrowsValidationExceptionOn400(): void
     {
+        $errorBody = json_encode([
+            'name' => 'builtins.ValueError',
+            'message' => 'Invalid request body',
+        ]);
         $mockClient = $this->createMock(ClientInterface::class);
         $mockClient->method('sendRequest')
-            ->willReturn(new Response(400, [], json_encode(['error' => ['message' => 'Bad request']])));
+            ->willReturn(new Response(400, [], $errorBody));
 
         $client = $this->createClient($mockClient);
 
@@ -189,13 +198,28 @@ class ClientTest extends TestCase
         $client->request('res.partner', 'create');
     }
 
+    public function testThrowsValidationExceptionOn422(): void
+    {
+        $errorBody = json_encode([
+            'name' => 'odoo.exceptions.ValidationError',
+            'message' => 'The email address is not valid',
+        ]);
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->method('sendRequest')
+            ->willReturn(new Response(422, [], $errorBody));
+
+        $client = $this->createClient($mockClient);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The email address is not valid');
+        $client->request('res.partner', 'create');
+    }
+
     public function testThrowsServerExceptionOn500(): void
     {
         $errorBody = json_encode([
-            'error' => [
-                'message' => 'Internal Server Error',
-                'data' => ['message' => 'Something went wrong'],
-            ],
+            'name' => 'builtins.RuntimeError',
+            'message' => 'Something went wrong',
         ]);
         $mockClient = $this->createMock(ClientInterface::class);
         $mockClient->method('sendRequest')
@@ -210,10 +234,8 @@ class ClientTest extends TestCase
     public function testExceptionContainsStatusCodeAndErrorData(): void
     {
         $errorBody = json_encode([
-            'error' => [
-                'message' => 'Server Error',
-                'data' => ['message' => 'Detailed error'],
-            ],
+            'name' => 'odoo.exceptions.UserError',
+            'message' => 'Detailed error',
         ]);
         $mockClient = $this->createMock(ClientInterface::class);
         $mockClient->method('sendRequest')
@@ -226,7 +248,54 @@ class ClientTest extends TestCase
             $this->fail('Expected ServerException');
         } catch (ServerException $e) {
             $this->assertSame(500, $e->getHttpStatusCode());
+            $this->assertSame('Detailed error', $e->getMessage());
             $this->assertIsArray($e->getErrorData());
+            $this->assertSame('odoo.exceptions.UserError', $e->getErrorData()['name']);
         }
+    }
+
+    public function testErrorWithoutMessageFallsBackToExceptionName(): void
+    {
+        $errorBody = json_encode([
+            'name' => 'odoo.exceptions.UserError',
+        ]);
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->method('sendRequest')
+            ->willReturn(new Response(422, [], $errorBody));
+
+        $client = $this->createClient($mockClient);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('odoo.exceptions.UserError');
+        $client->request('res.partner', 'create');
+    }
+
+    public function testDictResultContainingResultOrErrorKeysIsReturnedAsIs(): void
+    {
+        $responseData = [
+            'result' => ['definition' => 'a field literally named result'],
+            'error' => ['definition' => 'a field literally named error'],
+        ];
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->method('sendRequest')
+            ->willReturn(new Response(200, [], json_encode($responseData)));
+
+        $client = $this->createClient($mockClient);
+        $response = $client->request('res.partner', 'fields_get');
+
+        $this->assertSame($responseData, $response->result);
+        $this->assertTrue($response->isSuccess());
+    }
+
+    public function testInvalidJsonOnSuccessStatusThrows(): void
+    {
+        $mockClient = $this->createMock(ClientInterface::class);
+        $mockClient->method('sendRequest')
+            ->willReturn(new Response(200, [], '<html>not json</html>'));
+
+        $client = $this->createClient($mockClient);
+
+        $this->expectException(OdooException::class);
+        $client->request('res.partner', 'read');
     }
 }

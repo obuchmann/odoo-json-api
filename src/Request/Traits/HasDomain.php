@@ -19,4 +19,24 @@ trait HasDomain
 
         return $this;
     }
+
+    /**
+     * @param list<mixed> $values
+     */
+    public function whereIn(string $field, array $values): static
+    {
+        $this->domain->whereIn($field, $values);
+
+        return $this;
+    }
+
+    /**
+     * @param list<mixed> $values
+     */
+    public function whereNotIn(string $field, array $values): static
+    {
+        $this->domain->whereNotIn($field, $values);
+
+        return $this;
+    }
 }
